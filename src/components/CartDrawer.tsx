@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/sheet";
 import { ShoppingCart, Minus, Plus, Trash2, ExternalLink, Loader2 } from "lucide-react";
 import { useCartStore } from "@/stores/cartStore";
+import { currencySymbol, freeDeliveryThreshold } from "@/lib/config";
 
 export function CartDrawer() {
   const [isOpen, setIsOpen] = useState(false);
@@ -57,7 +58,11 @@ export function CartDrawer() {
           <SheetDescription>
             {totalItems === 0 ? "Your cart is empty" : `${totalItems} item${totalItems !== 1 ? 's' : ''} in your cart`}
           </SheetDescription>
-          <p className="text-xs text-accent font-medium">Free delivery above ₹2500/-</p>
+          {freeDeliveryThreshold > 0 && (
+            <p className="text-xs text-accent font-medium">
+              Free delivery above {currencySymbol}{freeDeliveryThreshold}/-
+            </p>
+          )}
         </SheetHeader>
         
         <div className="flex flex-col flex-1 pt-6 min-h-0">
@@ -91,7 +96,7 @@ export function CartDrawer() {
                           {item.selectedOptions.map(option => option.value).join(' • ')}
                         </p>
                         <p className="font-semibold text-primary">
-                          ₹{parseFloat(item.price.amount).toFixed(0)}
+                          {currencySymbol}{parseFloat(item.price.amount).toFixed(0)}
                         </p>
                       </div>
                       
@@ -134,11 +139,11 @@ export function CartDrawer() {
                 <div className="flex justify-between items-center">
                   <span className="text-lg font-semibold">Total</span>
                   <span className="text-xl font-bold font-heading text-primary">
-                    ₹{totalPrice.toFixed(0)}
+                    {currencySymbol}{totalPrice.toFixed(0)}
                   </span>
                 </div>
                 
-                {totalPrice >= 2500 && (
+                {freeDeliveryThreshold > 0 && totalPrice >= freeDeliveryThreshold && (
                   <p className="text-sm text-accent font-medium text-center">
                     🎉 You qualify for free delivery!
                   </p>

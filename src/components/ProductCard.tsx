@@ -1,9 +1,11 @@
 import { Link } from 'react-router-dom';
-import { ShoppingCart } from 'lucide-react';
+import { ShoppingCart, Zap, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCartStore } from '@/stores/cartStore';
-import { ShopifyProduct } from '@/lib/shopify';
+import { ShopifyProduct, createDirectCheckout } from '@/lib/shopify';
+import { currencySymbol, storeName } from '@/lib/config';
 import { toast } from 'sonner';
+import { useState } from 'react';
 
 interface ProductCardProps {
   product: ShopifyProduct;
@@ -11,6 +13,7 @@ interface ProductCardProps {
 
 export function ProductCard({ product }: ProductCardProps) {
   const addItem = useCartStore((state) => state.addItem);
+  const [isBuyingNow, setIsBuyingNow] = useState(false);
   const { node } = product;
   
   const firstVariant = node.variants.edges[0]?.node;
@@ -38,6 +41,27 @@ export function ProductCard({ product }: ProductCardProps) {
     });
   };
 
+  const handleBuyNow = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!firstVariant) return;
+
+    setIsBuyingNow(true);
+    try {
+      const checkoutUrl = await createDirectCheckout(firstVariant.id, 1);
+      window.open(checkoutUrl, '_blank');
+    } catch (error) {
+      console.error('Buy now failed:', error);
+      toast.error('Failed to create checkout', {
+        description: 'Please try again or add to cart instead.',
+        position: 'top-center',
+      });
+    } finally {
+      setIsBuyingNow(false);
+    }
+  };
+
   return (
     <Link 
       to={`/product/${node.handle}`}
@@ -55,12 +79,12 @@ export function ProductCard({ product }: ProductCardProps) {
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-gradient-warm">
-              <span className="text-muted-foreground font-heading text-lg">AMATYA</span>
+              <span className="text-muted-foreground font-heading text-lg">{storeName}</span>
             </div>
           )}
           
-          {/* Quick add button */}
-          <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/10 transition-colors duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+          {/* Quick action buttons */}
+          <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/10 transition-colors duration-300 flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
             <Button 
               variant="hero" 
               size="sm" 
@@ -69,6 +93,22 @@ export function ProductCard({ product }: ProductCardProps) {
             >
               <ShoppingCart className="h-4 w-4 mr-2" />
               Add to Cart
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleBuyNow}
+              disabled={isBuyingNow}
+              className="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75 bg-background/90 backdrop-blur-sm"
+            >
+              {isBuyingNow ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <>
+                  <Zap className="h-4 w-4 mr-2" />
+                  Buy Now
+                </>
+              )}
             </Button>
           </div>
         </div>
@@ -85,7 +125,7 @@ export function ProductCard({ product }: ProductCardProps) {
           
           <div className="flex items-center justify-between pt-2">
             <span className="text-xl font-bold text-primary font-heading">
-              ₹{parseFloat(price.amount).toFixed(0)}
+              {currencySymbol}{parseFloat(price.amount).toFixed(0)}
             </span>
             
             <span className="text-xs text-accent font-medium bg-accent/10 px-2 py-1 rounded-full">

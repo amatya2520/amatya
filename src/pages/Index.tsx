@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { ShopifyProduct, storefrontApiRequest, STOREFRONT_QUERY } from '@/lib/shopify';
 import { ArrowRight, Leaf, Award, Heart, Truck } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
+import { storeName, canonicalUrl, currencySymbol, freeDeliveryThreshold } from '@/lib/config';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -53,12 +54,16 @@ export default function Index() {
     return () => ctx.revert();
   }, [products]);
 
+  const freeDeliveryText = freeDeliveryThreshold > 0 
+    ? `Above ${currencySymbol}${freeDeliveryThreshold}/-` 
+    : 'On all orders';
+
   return (
     <>
       <Helmet>
-        <title>AMATYA - The Amrit Essence | Pure & Natural Indian Food Products</title>
-        <meta name="description" content="AMATYA brings the purity of rural traditions to your modern kitchen. Shop pure A2 Gir Cow Ghee, Raw Honey, and Natural Sweeteners. 100% natural, chemical-free products from Madhya Pradesh." />
-        <link rel="canonical" href="https://amatya.in" />
+        <title>{storeName} - The Amrit Essence | Pure & Natural Indian Food Products</title>
+        <meta name="description" content={`${storeName} brings the purity of rural traditions to your modern kitchen. Shop pure A2 Gir Cow Ghee, Raw Honey, and Natural Sweeteners. 100% natural, chemical-free products from Madhya Pradesh.`} />
+        {canonicalUrl && <link rel="canonical" href={canonicalUrl} />}
       </Helmet>
 
       <div ref={sectionRef}>
@@ -74,7 +79,7 @@ export default function Index() {
                   The Amrit Essence
                 </h2>
                 <p className="text-muted-foreground leading-relaxed">
-                  At Amatya we bring the purity of rural traditions to your modern kitchen. 
+                  At {storeName} we bring the purity of rural traditions to your modern kitchen. 
                   Rooted in authenticity, our brand is committed to delivering natural, 
                   chemical-free products straight from the farm. Every item—from our Bilona 
                   method Gir cow Ghee, to different raw Honey, and traditional Jaggery and 
@@ -117,7 +122,7 @@ export default function Index() {
                 { icon: Leaf, title: '100% Natural', desc: 'No chemicals or additives' },
                 { icon: Award, title: 'Traditional Methods', desc: 'Bilona & ancient processes' },
                 { icon: Heart, title: 'Farm Fresh', desc: 'Direct from farmers' },
-                { icon: Truck, title: 'Free Delivery', desc: 'Above ₹2500/-' },
+                { icon: Truck, title: 'Free Delivery', desc: freeDeliveryText },
               ].map((feature, i) => (
                 <div 
                   key={feature.title} 
@@ -188,7 +193,7 @@ export default function Index() {
                 Experience the True Essence of Purity
               </h2>
               <p className="text-cream/80 text-lg">
-                Join thousands of families who have made AMATYA a part of their daily wellness routine.
+                Join thousands of families who have made {storeName} a part of their daily wellness routine.
               </p>
               <Button asChild variant="golden" size="xl">
                 <Link to="/products">

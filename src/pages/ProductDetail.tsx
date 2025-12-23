@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { storefrontApiRequest, PRODUCT_BY_HANDLE_QUERY, ShopifyProduct } from '@/lib/shopify';
+import { storefrontApiRequest, PRODUCT_BY_HANDLE_QUERY, ShopifyProduct, createDirectCheckout } from '@/lib/shopify';
 import { useCartStore } from '@/stores/cartStore';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { ShoppingCart, Minus, Plus, ArrowLeft, Truck, Leaf, Award, Check } from 'lucide-react';
+import { ShoppingCart, Minus, Plus, ArrowLeft, Truck, Leaf, Award, Check, Zap, Loader2 } from 'lucide-react';
+import { currencySymbol, freeDeliveryThreshold, storeName } from '@/lib/config';
 
 export default function ProductDetail() {
   const { handle } = useParams<{ handle: string }>();
@@ -14,6 +15,7 @@ export default function ProductDetail() {
   const [selectedVariantIdx, setSelectedVariantIdx] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [activeImage, setActiveImage] = useState(0);
+  const [isBuyingNow, setIsBuyingNow] = useState(false);
   const addItem = useCartStore((state) => state.addItem);
 
   useEffect(() => {
@@ -76,10 +78,28 @@ export default function ProductDetail() {
     });
   };
 
+  const handleBuyNow = async () => {
+    if (!selectedVariant) return;
+
+    setIsBuyingNow(true);
+    try {
+      const checkoutUrl = await createDirectCheckout(selectedVariant.id, quantity);
+      window.open(checkoutUrl, '_blank');
+    } catch (error) {
+      console.error('Buy now failed:', error);
+      toast.error('Failed to create checkout', {
+        description: 'Please try again or add to cart instead.',
+        position: 'top-center',
+      });
+    } finally {
+      setIsBuyingNow(false);
+    }
+  };
+
   return (
     <>
       <Helmet>
-        <title>{product.title} - AMATYA | The Amrit Essence</title>
+        <title>{product.title} - {storeName} | The Amrit Essence</title>
         <meta name="description" content={product.description.slice(0, 160)} />
       </Helmet>
 
@@ -135,7 +155,7 @@ export default function ProductDetail() {
             {/* Details */}
             <div className="space-y-6">
               <div>
-                <span className="text-sm font-medium text-accent tracking-wider uppercase">AMATYA</span>
+                <span className="text-sm font-medium text-accent tracking-wider uppercase">{storeName}</span>
                 <h1 className="font-heading text-3xl md:text-4xl font-bold text-foreground mt-2">
                   {product.title}
                 </h1>
@@ -143,7 +163,7 @@ export default function ProductDetail() {
 
               <div className="flex items-baseline gap-4">
                 <span className="text-3xl font-bold text-primary font-heading">
-                  ₹{parseFloat(selectedVariant?.price.amount || '0').toFixed(0)}
+                  {currencySymbol}{parseFloat(selectedVariant?.price.amount || '0').toFixed(0)}
                 </span>
                 {product.variants.edges.length > 1 && (
                   <span className="text-muted-foreground text-sm">
@@ -198,7 +218,7 @@ export default function ProductDetail() {
                 </div>
               </div>
 
-              {/* Add to Cart */}
+              {/* Add to Cart & Buy Now */}
               <div className="flex gap-4">
                 <Button 
                   variant="hero" 
@@ -210,14 +230,31 @@ export default function ProductDetail() {
                   <ShoppingCart className="h-5 w-5 mr-2" />
                   {selectedVariant?.availableForSale ? 'Add to Cart' : 'Out of Stock'}
                 </Button>
+                <Button 
+                  variant="outline" 
+                  size="xl"
+                  onClick={handleBuyNow}
+                  disabled={!selectedVariant?.availableForSale || isBuyingNow}
+                >
+                  {isBuyingNow ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <>
+                      <Zap className="h-5 w-5 mr-2" />
+                      Buy Now
+                    </>
+                  )}
+                </Button>
               </div>
 
               {/* Benefits */}
               <div className="flex flex-wrap gap-4 pt-4 border-t border-border">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Truck className="h-4 w-4 text-accent" />
-                  <span>Free delivery above ₹2500/-</span>
-                </div>
+                {freeDeliveryThreshold > 0 && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Truck className="h-4 w-4 text-accent" />
+                    <span>Free delivery above {currencySymbol}{freeDeliveryThreshold}/-</span>
+                  </div>
+                )}
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Leaf className="h-4 w-4 text-accent" />
                   <span>100% Natural</span>

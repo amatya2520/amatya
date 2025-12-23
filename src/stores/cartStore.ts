@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { CartItem, createStorefrontCheckout, ShopifyProduct } from '@/lib/shopify';
+import { CartItem, createStorefrontCheckout } from '@/lib/shopify';
+import { cartStorageKey } from '@/lib/config';
 
 interface CartStore {
   items: CartItem[];
@@ -96,7 +97,7 @@ export const useCartStore = create<CartStore>()(
       }
     }),
     {
-      name: 'amatya-cart',
+      name: cartStorageKey,
       storage: createJSONStorage(() => localStorage),
     }
   )
